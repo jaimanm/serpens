@@ -1,5 +1,34 @@
 const fs = require("fs");
 
+// Parse Roman Numerals
+function parseRomanNumerals(str) {
+  const romanNumerals = {
+    I: 1,
+    V: 5,
+    X: 10,
+    L: 50,
+    C: 100,
+    D: 500,
+    M: 1000,
+  };
+
+  let total = 0;
+  let current,
+    previous = 0;
+
+  for (const char of str.split("").reverse()) {
+    current = romanNumerals[char];
+    if (current >= previous) {
+      total += current;
+    } else {
+      total -= current;
+    }
+    previous = current;
+  }
+
+  return total;
+}
+
 // tokenizer
 const tokenizer = (input) => {
   let tokens = [];
@@ -122,8 +151,8 @@ const tokenizer = (input) => {
 
       // At this point, we have a value for our `letters` so we check for thier types.
       //
-      // We first check if the `letters` is `set` or `define` and we assign the `token` a type `keyword`
-      if (letters === "set" || letters === "define") {
+      // We first check if the `letters` is `dico` or `constituo` and we assign the `token` a type `keyword`
+      if (letters === "dico" || letters === "constituo" || letters === "pono") {
         // Add a `token` to the `tokens` array
         tokens.push({
           type: "keyword",
@@ -133,8 +162,8 @@ const tokenizer = (input) => {
         continue; // We are done. Start the loop all over again
       }
 
-      // If the letter is `null`, assign the `token` a type `null`
-      if (letters === "null") {
+      // If the letter is `nullus`, assign the `token` a type `null`
+      if (letters === "nullus") {
         tokens.push({
           type: "null",
           value: letters,
@@ -142,8 +171,8 @@ const tokenizer = (input) => {
         continue;
       }
 
-      // If the letter is `null`, assign the `token` a type `ident`
-      if (letters === "as") {
+      // If the letter is `esse`, assign the `token` a type `ident`
+      if (letters === "esse") {
         tokens.push({
           type: "ident",
           value: letters,
@@ -152,10 +181,22 @@ const tokenizer = (input) => {
       }
 
       // If the letter is `true` or `false`, assign the `token` a type `boolean`
-      if (letters === "true" || letters === "false") {
+      if (letters === "verum" || letters === "falsum") {
         tokens.push({
           type: "boolean",
           value: letters,
+        });
+        continue;
+      }
+
+      // If the letters is roman numerals, assign the `token` a type `number`
+      // check if the letters is a series of roman numerals
+      const ROMAN_NUMERAL = /^(M|CM|D|CD|C|XC|L|XL|X|IX|V|IV|I)+$/;
+      if (ROMAN_NUMERAL.test(letters)) {
+        // If the letters are roman numerals, assign the `token` a type `number`
+        tokens.push({
+          type: "number",
+          value: parseRomanNumerals(letters),
         });
         continue;
       }
@@ -180,22 +221,25 @@ const tokenizer = (input) => {
 };
 
 // Testing the tokenizer
-const tokens = tokenizer("set age as 18;");
+const tokens = tokenizer("dico age esse XVIII;");
+console.log("tokens");
+console.log(tokens);
 // Expected output
 // [
-//   { type: 'keyword', value: 'set' },
+//   { type: 'keyword', value: 'dico' },
 //   { type: 'name', value: 'age' },
-//   { type: 'ident', value: 'as' },
-//   { type: 'number', value: 18 },
-//   { type: 'semi', value: ';' }
+//   { type: 'ident', value: 'esse' },
+//   { type: 'number', value: 18 }
 // ]
-const tokens1 = tokenizer("set isEmployed as false");
+const tokens1 = tokenizer("dico isEmployed esse falsum;");
+console.log("tokens1");
+console.log(tokens1);
 // Expected output
 // [
-//   { type: 'keyword', value: 'set' },
+//   { type: 'keyword', value: 'dico' },
 //   { type: 'name', value: 'isEmployed' },
-//   { type: 'ident', value: 'as' },
-//   { type: 'boolean', value: 'false' },
+//   { type: 'ident', value: 'esse' },
+//   { type: 'boolean', value: 'falsum' },
 //   { type: 'semi', value: ';' }
 // ]
 
@@ -341,6 +385,49 @@ const parser = (tokens) => {
   return ast;
 };
 
+// Testing the parser
+const ast = parser(tokens);
+console.log("ast");
+console.dir(ast, { depth: null });
+// Expected output
+// {
+//   type: 'Program',
+//   body: [
+//     {
+//       type: 'VariableDeclaration',
+//       kind: 'dico',
+//       declarations: [
+//         {
+//           type: 'VariableDeclarator',
+//           id: { type: 'Identifier', name: 'age' },
+//           init: { type: 'NumberLiteral', value: 18 }
+//         }
+//       ]
+//     }
+//   ]
+// }
+
+const ast1 = parser(tokens1);
+console.log("ast1");
+console.dir(ast1, { depth: null });
+// Expected output
+// {
+//   type: 'Program',
+//   body: [
+//     {
+//       type: 'VariableDeclaration',
+//       kind: 'dico',
+//       declarations: [
+//         {
+//           type: 'VariableDeclarator',
+//           id: { type: 'Identifier', name: 'isEmployed' },
+//           init: { type: 'BooleanLiteral', value: 'falsum' }
+//         }
+//       ]
+//     }
+//   ]
+// }
+
 // traverser
 const traverser = (ast, visitor) => {
   // `traverseArray` function will allow us to iterate over an array of nodes and
@@ -354,14 +441,14 @@ const traverser = (ast, visitor) => {
   // In the `traverseNode`, will get the  node `type` object and call the `enter`
   // method if the object is present
   // Then recursively call the `traverseNode` again on every child node
-  const traverseNode = (node, parser) => {
+  const traverseNode = (node, parent) => {
     // Get the node object on the visitor passed to the `traverser`
     let objects = visitor[node.type];
 
     // Check if the node type object is present and call the enter method
-    // with the node and the parent
+    // with the node and the parser
     if (objects && objects.enter) {
-      methods.enter(node, parent);
+      objects.enter(node, parent);
     }
 
     // At this point, we will call the `traverseNode` and `traverseArray` methods recursively
@@ -405,20 +492,37 @@ const traverser = (ast, visitor) => {
 const transformer = (ast) => {
   // We will start by creating the `visitor` object
   const visitor = {
-    // Then we will create the `VariableDeclaration` object in the `visitor`
+    // We will visit the `VariableDeclaration` node type
     VariableDeclaration: {
-      // Here, we will have the `enter` method which will take the `node` and the `parent`
-      // Although we won't use the parent (Simplicity)
+      // On enter, we will take the node and its parent
       enter(node, parent) {
-        // Check if the VariableDeclaration has a `kind` property
-        // If it has, we change based on the previous one
-        // `set` -> `let`
-        // `define` -> `const`
-        if (node.kind) {
-          if (node.kind === "set") {
-            node.kind = "let"; // Set it to `let`
-          } else {
-            node.kind = "const";
+        // We will check the `kind` property of the node
+        // If it is `dico`, we will change it to `var`
+        // If it is `constituo`, we will change it to `const`
+        if (node.kind === "dico") {
+          node.kind = "var";
+        } else if (node.kind === "constituo") {
+          node.kind = "const";
+        }
+      },
+    },
+
+    // We will do the same for the `VariableDeclarator` node type
+    VariableDeclarator: {
+      enter(node, parent) {
+        // We will check the `init` property of the node
+        // If it is `verum`, we will change it to `true`
+        // If it is `falsum`, we will change it to `false`
+        // If it is `nullus`, we will change it to `null`
+        if (node.init.type === "BooleanLiteral") {
+          if (node.init.value === "verum") {
+            node.init.value = true;
+          } else if (node.init.value === "falsum") {
+            node.init.value = false;
+          }
+        } else if (node.init.type === "NullLiteral") {
+          if (node.init.value === "nullus") {
+            node.init.value = null;
           }
         }
       },
@@ -455,8 +559,51 @@ const transformer = (ast) => {
   return ast;
 };
 
+// Testing the transformer
+const mast = transformer(ast);
+console.log("mast");
+console.dir(mast, { depth: null });
+// Expected output
+// {
+//   type: 'Program',
+//   body: [
+//     {
+//       type: 'VariableDeclaration',
+//       kind: 'var',
+//       declarations: [
+//         {
+//           type: 'VariableDeclarator',
+//           id: { type: 'Identifier', name: 'age' },
+//           init: { type: 'NumberLiteral', value: 18 }
+//         }
+//       ]
+//     }
+//   ]
+// }
+
+const mast1 = transformer(ast1);
+console.log("mast1");
+console.dir(mast1, { depth: null });
+// Expected output
+// {
+//   type: 'Program',
+//   body: [
+//     {
+//       type: 'VariableDeclaration',
+//       kind: 'var',
+//       declarations: [
+//         {
+//           type: 'VariableDeclarator',
+//           id: { type: 'Identifier', name: 'isEmployed' },
+//           init: { type: 'BooleanLiteral', value: false }
+//         }
+//       ]
+//     }
+//   ]
+// }
+
 // generator
-const generator = (ast) => {
+const generator = (node) => {
   // Let's break things down by the `type` of the `node`.
   // Starting with the smaller nodes to the larger ones
   switch (node.type) {
@@ -512,6 +659,19 @@ const generator = (ast) => {
   }
 };
 
+// Testing the generator
+const output = generator(mast);
+console.log("output");
+console.log(output);
+// Expected output
+// var age = 18;
+
+const output1 = generator(mast1);
+console.log("output1");
+console.log(output1);
+// Expected output
+// var isEmployed = false;
+
 // compiler
 const compiler = (code) => {
   // Take the code and convert it into token
@@ -530,11 +690,11 @@ const compiler = (code) => {
   return output;
 };
 
-let code = "set age as 18;";
-let _code = 'define name as "Duncan"';
+let code = "dico age esse 18;";
+let _code = 'constituo name esse "Duncan"';
 let __code = `
-set age as 18;\n
-define name as "duncan";
+dico isEmployed esse verum;\n
+constituo firstName esse "Jaiman";
 `;
 const js = compiler(code);
 const _js = compiler(_code);
@@ -542,4 +702,4 @@ const __js = compiler(__code);
 
 console.log(js); // let age = 18;
 console.log(_js); // const name = "Duncan";
-console.log(__js); // let age = 18; const name = "duncan";
+console.log(__js); // let isEmployed = false; const firstName = "Jaiman";

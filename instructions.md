@@ -8,10 +8,15 @@ Today we are going to create our own syntax in JavaScript. For simplicity sake a
 // `set` and `define` to replace `let` and `const`
 
 set name as "Duncan";
-// let name = "Duncan";
+// let n = "Duncan";
+
+// 'pono' to replace 'let'
+pono nomen esse "Duncan";
 
 define k as 1024;
 // const k = 1024;
+// 'constituto' to replace 'const'
+constituo k esse 1024;
 ```
 
 With the syntax, we could `split` the input and replace `set` and `define` with `let` and `const` respectively but everyone can do that. Let's try something else.

@@ -1,0 +1,11 @@
+Roman Numerals for Numbers!!!
+
+dico -> var
+constituo -> const
+pono -> let
+
+nullus -> null
+esse -> =
+
+verum -> true
+falsum -> false
