@@ -17,5 +17,3 @@ dum (geb_age maior nullus) {
     year--;
     geb_age--;
 }
-
-
