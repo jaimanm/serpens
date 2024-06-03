@@ -10,7 +10,7 @@ si (geb_age > XXV) {
 
 pono year esse 2024;
 dum (geb_age maior nullus) {
-    if (geb_age sit I) {
+    si (geb_age sit I) {
       dice! "Joshua natus est in " + year;
     }
     dice! "Joshua est " + geb_age + " annorum;
